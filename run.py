@@ -18,8 +18,8 @@ def getData(directory_name, x, label):
     directory = os.fsencode(directory_name)
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
-        i = Image.open(directory_name + filename)
-        x.append(np.asarray(i).ravel())
+        i = Image.open(directory_name + filename)#.convert('L')
+        x.append(np.asarray(i))#.ravel())
         global y
         global count
         y.insert(count, label)
@@ -28,7 +28,7 @@ def getData(directory_name, x, label):
         numbers[label]  = numbers[label] + 1
 
 
-# Step 1
+# Step 1 - loading dataset
 x = [] # list of items
 rootFolder = '/home/stefano/Documenti/Politecnico/Magistrale/2 Anno/ML/Homework/#1/PACS_homework/' # root images folder
 folder1 = 'dog/'
@@ -42,22 +42,29 @@ getData(rootFolder+folder3, x, 2)
 getData(rootFolder+folder4, x, 3)
 
 
+# Step 2 - PCA on a single image
+img = np.asarray(Image.open(rootFolder+folder1+'056_0024.jpg'), dtype=np.float64)
+img_r = np.reshape(img, (227, 681))
+#plt.imshow(img)
+img_r = StandardScaler().fit_transform(img_r)
 
-# Step 2
-img = Image.open(rootFolder+folder1+'056_0026.jpg')
-im_grey = img.convert('L')
-im_array = np.array(im_grey)
-#print(im_array.shape)
-img_pca = PCA(60).fit_transform(im_array)
-print(img_pca.shape)
-Image.fromarray(img_pca).show()
+my_pca60 = PCA(60).fit(img_r)
+my_pca6 = PCA(6).fit(img_r)
+my_pca2 = PCA(2).fit(img_r)
+
+img_compressed = my_pca60.transform(img_r)
+temp = my_pca60.inverse_transform(img_compressed)
+temp = np.reshape(temp, (227,227,3))
+Image.fromarray(temp.astype('uint8')).show()
 
 
-# Step 3
+
+# Step 3 - Plotting X_t into a scatter plot
 x = np.asarray(x, dtype=np.float64)
-x = StandardScaler().fit_transform(x)
-np.set_printoptions(threshold=np.nan)
-X_t = PCA(60).fit_transform(x)
+x_r = np.reshape(x, (1087,154587))
+x_r = StandardScaler().fit_transform(x_r)
+pca60 = PCA(2).fit(x_r)
+X_t = pca60.transform(x_r)
 
 dogIndex = numbers[0]-1
 guitarIndex = numbers[0]+numbers[1]-1
