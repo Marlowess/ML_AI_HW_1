@@ -1,3 +1,7 @@
+# AI & ML Homework - PoliTo AA 2018/2018
+# Prof. Barbara Caputo
+# Homework #1 - Stefano Brilli s249914
+
 from PIL import Image
 import numpy as np
 import os
@@ -10,16 +14,18 @@ import pandas as pd
 # vector representing how many elements there are in each folder
 # 0:dog 1:guitar 2:house 3:person
 numbers = [0, 0, 0, 0]
+x = [] # list of items
 y = []
 count = 0
 
 # This method opens each class folder and gets raw pixels of each image
-def getData(directory_name, x, label):
+def getData(directory_name, label):
     directory = os.fsencode(directory_name)
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
         i = Image.open(directory_name + filename)#.convert('L')
-        x.append(np.asarray(i))#.ravel())
+        global x
+        x.extend(np.asarray(i))#.ravel())
         global y
         global count
         y.insert(count, label)
@@ -28,44 +34,48 @@ def getData(directory_name, x, label):
         numbers[label]  = numbers[label] + 1
 
 
-# Step 1 - loading dataset
-x = [] # list of items
+
+# 1.2 Principal Components Visualization
+# Loading images dataset
 rootFolder = '/home/stefano/Documenti/Politecnico/Magistrale/2 Anno/ML/Homework/#1/PACS_homework/' # root images folder
 folder1 = 'dog/'
 folder2 = 'guitar/'
 folder3 = 'house/'
 folder4 = 'person/'
 
-getData(rootFolder+folder1, x, 0)
-getData(rootFolder+folder2, x, 1)
-getData(rootFolder+folder3, x, 2)
-getData(rootFolder+folder4, x, 3)
+getData(rootFolder+folder1, 0) # subset of dog images
+# getData(rootFolder+folder2, x, 1) # subset of guitar images
+# getData(rootFolder+folder3, x, 2) # subset of house images
+# getData(rootFolder+folder4, x, 3) # subset of person images
 
 
-# Step 2 - PCA on a single image
-img = np.asarray(Image.open(rootFolder+folder1+'056_0024.jpg'), dtype=np.float64)
-img_r = np.reshape(img, (227, 681))
-#plt.imshow(img)
-img_r = StandardScaler().fit_transform(img_r)
+# Computing PCA on the matrix
+x = np.asarray(x, dtype=np.float64) # all 3D images
+#x_r = np.reshape(x, (1087,154587)) # vectorial representation of matrix
+x_r = np.reshape(x, (189,154587)) # vectorial representation of matrix
+scal = StandardScaler()
+x_r = scal.fit_transform(x_r)
 
-my_pca60 = PCA(60).fit(img_r)
-my_pca6 = PCA(6).fit(img_r)
-my_pca2 = PCA(2).fit(img_r)
+pca60 = PCA(189)
+#pca6 = PCA(6)
+# pca2 = PCA(2)
 
-img_compressed = my_pca60.transform(img_r)
-temp = my_pca60.inverse_transform(img_compressed)
-temp = np.reshape(temp, (227,227,3))
-Image.fromarray(temp.astype('uint8')).show()
+X_t = pca60.fit_transform(x_r) # dataset drawed according to its sixty first principal components
+#X_t = pca6.fit_transform(x_r) # dataset drawed according to its six first principal components
+# X_t = pca2.fit_transform(x_r) # dataset drawed according to its two first principal components
+
+# Applying pca on images and visualizing the result
+imgs_compressed = pca60.inverse_transform(X_t)
+test_image = imgs_compressed[99]
+test_image = scal.inverse_transform(test_image)
+test_image = np.reshape(test_image, (227,227,3))
+
+# Compressed image visualization
+Image.fromarray(test_image.astype('uint8')).show()
+print(pca60.explained_variance_ratio_.cumsum())
 
 
-
-# Step 3 - Plotting X_t into a scatter plot
-x = np.asarray(x, dtype=np.float64)
-x_r = np.reshape(x, (1087,154587))
-x_r = StandardScaler().fit_transform(x_r)
-pca60 = PCA(2).fit(x_r)
-X_t = pca60.transform(x_r)
-
+# Plotting data
 dogIndex = numbers[0]-1
 guitarIndex = numbers[0]+numbers[1]-1
 houseIndex = numbers[0]+numbers[1]+numbers[2]-1
