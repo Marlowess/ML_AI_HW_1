@@ -17,23 +17,40 @@ numbers = [0, 0, 0, 0]
 x = [] # list of items
 y = []
 count = 0
+X_t = [] # here I save the eigenvectors of my dataset according to the number of PC
 
 # This method opens each class folder and gets raw pixels of each image
-def getData(directory_name, label):
+def getData(directory_name, x, label, y):
     directory = os.fsencode(directory_name)
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
         i = Image.open(directory_name + filename)#.convert('L')
-        global x
         x.extend(np.asarray(i))#.ravel())
-        global y
         global count
         y.insert(count, label)
         count += 1
         global numbers
         numbers[label]  = numbers[label] + 1
 
+# This methos applies the PCA to the data with number of components as decided by user
+def pcaApplication(x_r, number_of_components, scaler, image_index = 99): #image_index = 99
+    my_pca = PCA(number_of_components)
+    X_t = my_pca.fit_transform(x_r)
+    imgs_compressed = my_pca.inverse_transform(X_t)
+    test_image = imgs_compressed[image_index]
+    test_image = scaler.inverse_transform(test_image)
+    test_image = np.reshape(test_image, (227,227,3))
+    variance = my_pca.explained_variance_ratio_.cumsum()[number_of_components-1]
+    return test_image, variance
 
+# Plot one or more images
+def plotImage(test_img, variance, number_of_components):
+    fig = plt.figure()
+    a = fig.add_subplot(1, 1, 1)
+    img = Image.fromarray(test_img.astype('uint8'))
+    imgplot = plt.imshow(img)
+    a.set_title(str(number_of_components) + ' Principal Components\nVariance: ' + str(variance))
+    plt.savefig(rootFolder + 'my_pca_' + str(number_of_components) + '.jpg')
 
 # 1.2 Principal Components Visualization
 # Loading images dataset
@@ -43,36 +60,25 @@ folder2 = 'guitar/'
 folder3 = 'house/'
 folder4 = 'person/'
 
-getData(rootFolder+folder1, 0) # subset of dog images
-# getData(rootFolder+folder2, x, 1) # subset of guitar images
-# getData(rootFolder+folder3, x, 2) # subset of house images
-# getData(rootFolder+folder4, x, 3) # subset of person images
+getData(rootFolder+folder1, x, 0, y) # subset of dog images
+getData(rootFolder+folder2, x, 1, y) # subset of guitar images
+getData(rootFolder+folder3, x, 2, y) # subset of house images
+getData(rootFolder+folder4, x, 3, y) # subset of person images
 
 
 # Computing PCA on the matrix
 x = np.asarray(x, dtype=np.float64) # all 3D images
-#x_r = np.reshape(x, (1087,154587)) # vectorial representation of matrix
-x_r = np.reshape(x, (189,154587)) # vectorial representation of matrix
-scal = StandardScaler()
-x_r = scal.fit_transform(x_r)
+x_r = np.reshape(x, (1087,154587)) # vectorial representation of matrix
+#x_r = np.reshape(x, (189,154587)) # vectorial representation of matrix
+scaler = StandardScaler()
+x_r = scaler.fit_transform(x_r)
 
-pca60 = PCA(189)
-#pca6 = PCA(6)
-# pca2 = PCA(2)
-
-X_t = pca60.fit_transform(x_r) # dataset drawed according to its sixty first principal components
-#X_t = pca6.fit_transform(x_r) # dataset drawed according to its six first principal components
-# X_t = pca2.fit_transform(x_r) # dataset drawed according to its two first principal components
-
-# Applying pca on images and visualizing the result
-imgs_compressed = pca60.inverse_transform(X_t)
-test_image = imgs_compressed[99]
-test_image = scal.inverse_transform(test_image)
-test_image = np.reshape(test_image, (227,227,3))
-
-# Compressed image visualization
-Image.fromarray(test_image.astype('uint8')).show()
-print(pca60.explained_variance_ratio_.cumsum())
+# my_compressed_image_60, variance_60 = pcaApplication(x_r, 60, scaler)
+# plotImage(my_compressed_image_60, variance_60, 60)
+# my_compressed_image_6, variance_6 = pcaApplication(x_r, 6, scaler)
+# plotImage(my_compressed_image_6, variance_6, 6)
+my_compressed_image_2, variance_2 = pcaApplication(x_r, 2, scaler)
+plotImage(my_compressed_image_2, variance_2, 2)
 
 
 # Plotting data
