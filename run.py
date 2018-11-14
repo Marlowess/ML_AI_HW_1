@@ -32,15 +32,34 @@ def getData(directory_name, x, label, y):
         global numbers
         numbers[label]  = numbers[label] + 1
 
-# This methos applies the PCA to the data with number of components as decided by user
+# This method applies the PCA to the data with number of components as decided by user
 def pcaApplication(x_r, number_of_components, scaler, image_index = 99): #image_index = 99
     my_pca = PCA(number_of_components)
     X_t = my_pca.fit_transform(x_r)
     imgs_compressed = my_pca.inverse_transform(X_t)
+    print(imgs_compressed.shape)
     test_image = imgs_compressed[image_index]
     test_image = scaler.inverse_transform(test_image)
     test_image = np.reshape(test_image, (227,227,3))
     variance = my_pca.explained_variance_ratio_.cumsum()[number_of_components-1]
+    return test_image, variance
+
+# This method gets the last 6 principal components from the matrix
+# sklearn libraries don't provide a method to do it, so I've to perform the operations
+# manually on data
+def getLastPc(x_r, scaler, image_index = 99):
+    my_pca = PCA()
+    X_t = my_pca.fit_transform(x_r)
+    print(my_pca.components_.shape)
+    my_eig = my_pca.components_[1081:1087]
+    my_pca.components_[0:6] = my_eig[0,6]
+    my_pca.components_[6:] = 0
+    print(my_pca.components_[0:9])
+    imgs_compressed = my_pca.inverse_transform(X_t)
+    test_image = imgs_compressed[image_index]
+    test_image = scaler.inverse_transform(test_image)
+    test_image = np.reshape(test_image, (227,227,3))
+    variance = my_pca.explained_variance_ratio_.cumsum()[5]
     return test_image, variance
 
 # Plot one or more images
@@ -77,8 +96,10 @@ x_r = scaler.fit_transform(x_r)
 # plotImage(my_compressed_image_60, variance_60, 60)
 # my_compressed_image_6, variance_6 = pcaApplication(x_r, 6, scaler)
 # plotImage(my_compressed_image_6, variance_6, 6)
-my_compressed_image_2, variance_2 = pcaApplication(x_r, 2, scaler)
-plotImage(my_compressed_image_2, variance_2, 2)
+# my_compressed_image_2, variance_2 = pcaApplication(x_r, 2, scaler)
+# plotImage(my_compressed_image_2, variance_2, 2)
+my_compressed_image_l6, variance_l6 = getLastPc(x_r, scaler)
+plotImage(my_compressed_image_l6, variance_l6, 'Last 6')
 
 
 # Plotting data
