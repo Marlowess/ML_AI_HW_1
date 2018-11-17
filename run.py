@@ -1,7 +1,6 @@
 # AI & ML Homework - PoliTo AA 2018/2018
 # Prof. Barbara Caputo
 # Homework #1 - Stefano Brilli s249914
-
 from PIL import Image
 import numpy as np
 import os
@@ -10,6 +9,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colo
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 
 # vector representing how many elements there are in each folder
 # 0:dog 1:guitar 2:house 3:person
@@ -32,17 +33,6 @@ def getData(directory_name, x, label, y):
         global numbers
         numbers[label]  = numbers[label] + 1
 
-# This method applies the PCA to the data with number of components as decided by user
-# def pcaApplication(x_r, number_of_components, scaler, image_index = 99): #image_index = 99
-#     my_pca = PCA(number_of_components)
-#     X_t = my_pca.fit_transform(x_r)
-#     imgs_compressed = my_pca.inverse_transform(X_t)
-#     #print(imgs_compressed.shape)
-#     test_image = imgs_compressed[image_index]
-#     test_image = scaler.inverse_transform(test_image)
-#     test_image = np.reshape(test_image, (227,227,3))
-#     variance = my_pca.explained_variance_ratio_.cumsum()[number_of_components-1]
-#     return test_image, variance, imgs_compressed
 
 # This method gets the last 6 principal components from the matrix
 # sklearn libraries don't provide a method to do it, so I've to perform the operations
@@ -51,29 +41,24 @@ def getData(directory_name, x, label, y):
 # index2 = index of final principal components + 1
 def getPC(x_r, index1, index2):
     index1, index2 = int(index1), int(index2)
-    my_pca = PCA()
+    my_pca = PCA(index2)
     X_t = my_pca.fit_transform(x_r)
-    #print(my_pca.components_.shape)
     my_eig = my_pca.components_[index1:index2]
     remain = index2 - index1
     my_pca.components_[0:remain] = my_eig[0:remain]
     my_pca.components_[remain:] = 0
     imgs_compressed = my_pca.inverse_transform(X_t)
     variance = my_pca.explained_variance_ratio_.cumsum()[remain - 1]
-    # test_image = imgs_compressed[image_index]
-    # test_image = scaler.inverse_transform(test_image)
-    # test_image = np.reshape(test_image, (227,227,3))
-    # variance = my_pca.explained_variance_ratio_.cumsum()[remain - 1]
-    # return test_image, variance, imgs_compressed
     return imgs_compressed, variance
 
+# Gets the chosen image reprojected
 def getReprojectedImage(imgs_compressed, scaler, image_index=99):
     test_image = imgs_compressed[image_index]
     test_image = scaler.inverse_transform(test_image)
     test_image = np.reshape(test_image, (227,227,3))
     return test_image
 
-# Plot one or more images
+# Plots one or more images
 def plotImage(test_img, variance, number_of_components):
     fig = plt.figure()
     a = fig.add_subplot(1, 1, 1)
@@ -82,7 +67,7 @@ def plotImage(test_img, variance, number_of_components):
     a.set_title(str(number_of_components) + ' Principal Components\nVariance: ' + str(variance))
     plt.savefig(rootFolder + 'my_pca_' + str(number_of_components) + '.jpg')
 
-
+# Plots a scatter diagram to visualize principal components
 def plotScatter(matrix, components_details, saving_name):
     dogIndex = numbers[0]-1
     guitarIndex = numbers[0]+numbers[1]-1
@@ -107,8 +92,24 @@ def plotScatter(matrix, components_details, saving_name):
     plt.savefig(rootFolder + saving_name + '.jpg')
     plt.show()
 
-# 1.2 Principal Components Visualization
-# Loading images dataset
+# Performs a cross-validation on data
+def classification(X, Y):
+    # First, I've to create training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.4, random_state=0)
+    clf = GaussianNB()
+    clf.fit(X_train, y_train)
+    GaussianNB(priors=None, var_smoothing=1e-09)
+    print(clf.score(X_test, y_test))
+
+# Performs a prediction according to the classifier and the given image
+def image_predictor(image, classifier):
+    # The printed result is the predicted label of the image
+    print(classifier.predict(np.reshape(image, (1,154587))))
+
+
+
+
+# Loads images dataset
 rootFolder = '/home/stefano/Documenti/Politecnico/Magistrale/2 Anno/ML/Homework/#1/PACS_homework/' # root images folder
 folder1 = 'dog/'
 folder2 = 'guitar/'
@@ -124,26 +125,17 @@ getData(rootFolder+folder4, x, 3, y) # subset of person images
 # Computing PCA on the matrix
 x = np.asarray(x, dtype=np.float64) # all 3D images
 x_r = np.reshape(x, (1087,154587)) # vectorial representation of matrix
-#x_r = np.reshape(x, (189,154587)) # vectorial representation of matrix
 scaler = StandardScaler()
 x_r = scaler.fit_transform(x_r)
-
-X_R, variance = getPC(x_r, 0, 60)
-img = getReprojectedImage(X_R, scaler)
+X_R, variance = getPC(x_r, 2, 4)
+# #img = getReprojectedImage(X_R, scaler)
 print("Variance is {}".format(variance))
-plotImage(img, variance, 'two')
-plotScatter(X_R, "first and second", "Prova")
+# #plotImage(img, variance, 'two')
+# X_R = scaler.inverse_transform(X_R)
+# #plotScatter(X_R, "tenth and eleventh", "scatter_10_11")
 
-# my_compressed_image_60, variance_60 = pcaApplication(x_r, 60, scaler)
-# plotImage(my_compressed_image_60, variance_60, 60)
-# my_compressed_image_6, variance_6 = pcaApplication(x_r, 6, scaler)
-# plotImage(my_compressed_image_6, variance_6, 6)
-# my_compressed_image_2, variance_2, X_n = pcaApplication(x_r, 2, scaler)
-# plotImage(my_compressed_image_2, variance_2, 2)
-# my_compressed_image_l6, variance_l6 = getSpecificPc(x_r, scaler)
-# plotImage(my_compressed_image_l6, variance_l6, 'Last 6')
 
-# my_compressed_image_l6, variance_l6, X_n = getSpecificPc(x_r, scaler, 0, 2)
-# plotImage(my_compressed_image_l6, variance_l6, '60_PROVA')
-# #plotScatter(X_n, "First and second", "1_2_pc")
-# plotScatter(X_n, "first and second", "1_2_2_pc")
+# CLASSIFICATION STEP
+# img = np.reshape(x_r[653].astype('uint8'), (227,227,3))
+# imgplot = plt.imshow(img)
+classification(X_R, y)
