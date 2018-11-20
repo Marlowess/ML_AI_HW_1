@@ -8,7 +8,6 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import matplotlib.colors as colo
 from sklearn.preprocessing import StandardScaler
-import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 
@@ -51,6 +50,14 @@ def getPC(x_r, index1, index2):
     variance = my_pca.explained_variance_ratio_.cumsum()[remain - 1]
     return imgs_compressed, variance
 
+def getVarianceArray(x_r):
+    my_pca = PCA()
+    X_t = my_pca.fit_transform(x_r)
+    variance = my_pca.explained_variance_ratio_.cumsum()
+    np.set_printoptions(threshold=np.nan)
+    print(variance)
+    # plotSplineFunction(variance)
+
 # Gets the chosen image reprojected
 def getReprojectedImage(imgs_compressed, scaler, image_index=99):
     test_image = imgs_compressed[image_index]
@@ -92,6 +99,15 @@ def plotScatter(matrix, components_details, saving_name):
     plt.savefig(rootFolder + saving_name + '.jpg')
     plt.show()
 
+# Plots the variance function related to principal components
+def plotSplineFunction(array):
+    x_new = np.linspace(0, array.size, array.size)
+    y = array
+    print(y)
+    plt.plot (x_new, y)
+    plt.scatter (x_new, y)
+    plt.savefig(rootFolder + "variance_plot" + '.jpg')
+
 # Performs a cross-validation on data
 def classification(X, Y):
     # First, I've to create training and test sets
@@ -127,9 +143,10 @@ x = np.asarray(x, dtype=np.float64) # all 3D images
 x_r = np.reshape(x, (1087,154587)) # vectorial representation of matrix
 scaler = StandardScaler()
 x_r = scaler.fit_transform(x_r)
-X_R, variance = getPC(x_r, 2, 4)
+getVarianceArray(x_r)
+# X_R, variance = getPC(x_r, 0, 1087)
 # #img = getReprojectedImage(X_R, scaler)
-print("Variance is {}".format(variance))
+# print("Variance is {}".format(variance))
 # #plotImage(img, variance, 'two')
 # X_R = scaler.inverse_transform(X_R)
 # #plotScatter(X_R, "tenth and eleventh", "scatter_10_11")
@@ -138,4 +155,4 @@ print("Variance is {}".format(variance))
 # CLASSIFICATION STEP
 # img = np.reshape(x_r[653].astype('uint8'), (227,227,3))
 # imgplot = plt.imshow(img)
-classification(X_R, y)
+# classification(X_R, y)
