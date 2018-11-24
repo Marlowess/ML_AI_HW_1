@@ -10,6 +10,7 @@ import matplotlib.colors as colo
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
+import copy
 
 # vector representing how many elements there are in each folder
 # 0:dog 1:guitar 2:house 3:person
@@ -38,10 +39,8 @@ def getData(directory_name, x, label, y):
 # manually on data
 # index1 = index of initial principal components
 # index2 = index of final principal components + 1
-def getPC(x_r, index1, index2):
+def getPCResults(X_t, my_pca, index1, index2):
     index1, index2 = int(index1), int(index2)
-    my_pca = PCA(index2)
-    X_t = my_pca.fit_transform(x_r)
     my_eig = my_pca.components_[index1:index2]
     remain = index2 - index1
     my_pca.components_[0:remain] = my_eig[0:remain]
@@ -50,13 +49,20 @@ def getPC(x_r, index1, index2):
     variance = my_pca.explained_variance_ratio_.cumsum()[remain - 1]
     return imgs_compressed, variance
 
+# Just the computation of all principal components
+def getAllPC(x_r):
+    my_pca = PCA()
+    X_t = my_pca.fit_transform(x_r)
+    return X_t, my_pca
+
 def getVarianceArray(x_r):
     my_pca = PCA()
     X_t = my_pca.fit_transform(x_r)
     variance = my_pca.explained_variance_ratio_.cumsum()
-    np.set_printoptions(threshold=np.nan)
-    print(variance)
+    # np.set_printoptions(threshold=np.nan)
+    # print(variance)
     # plotSplineFunction(variance)
+    return variance
 
 # Gets the chosen image reprojected
 def getReprojectedImage(imgs_compressed, scaler, image_index=99):
@@ -75,7 +81,7 @@ def plotImage(test_img, variance, number_of_components):
     plt.savefig(rootFolder + 'my_pca_' + str(number_of_components) + '.jpg')
 
 # Plots a scatter diagram to visualize principal components
-def plotScatter(matrix, components_details, saving_name):
+def plotScatter(matrix, components_details, saving_name, index1, index2):
     dogIndex = numbers[0]-1
     guitarIndex = numbers[0]+numbers[1]-1
     houseIndex = numbers[0]+numbers[1]+numbers[2]-1
@@ -143,7 +149,26 @@ x = np.asarray(x, dtype=np.float64) # all 3D images
 x_r = np.reshape(x, (1087,154587)) # vectorial representation of matrix
 scaler = StandardScaler()
 x_r = scaler.fit_transform(x_r)
-getVarianceArray(x_r)
+
+X_t, my_pca = getAllPC(x_r)
+
+X_R_60, variance60 = getPCResults(X_t, copy.copy(my_pca), 0, 60)
+img_60 = getReprojectedImage(X_R_60, scaler)
+plotImage(img_60, variance60, 60)
+
+X_R_6, variance6 = getPCResults(X_t, copy.copy(my_pca), 0, 6)
+img_6 = getReprojectedImage(X_R_6, scaler)
+plotImage(img_6, variance6, 6)
+
+X_R_2, variance2 = getPCResults(X_t, copy.copy(my_pca), 0, 2)
+img_2 = getReprojectedImage(X_R_2, scaler)
+plotImage(img_2, variance2, 2)
+
+X_R_l6, variancel6 = getPCResults(X_t, copy.copy(my_pca), 1081, 1087)
+img_l6 = getReprojectedImage(X_R_l6, scaler)
+plotImage(img_l6, variancel6, 'Last 6')
+
+# getVarianceArray(x_r)
 # X_R, variance = getPC(x_r, 0, 1087)
 # #img = getReprojectedImage(X_R, scaler)
 # print("Variance is {}".format(variance))
