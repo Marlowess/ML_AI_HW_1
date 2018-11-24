@@ -122,10 +122,10 @@ def classification(X, Y):
     clf.fit(X_train, y_train)
     GaussianNB(priors=None, var_smoothing=1e-09)
     print(clf.score(X_test, y_test))
+    return clf
 
 # Performs a prediction according to the classifier and the given image
 def image_predictor(image, classifier):
-    # The printed result is the predicted label of the image
     print(classifier.predict(np.reshape(image, (1,154587))))
 
 
